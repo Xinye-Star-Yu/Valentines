@@ -116,14 +116,12 @@ body {
   display: grid;
   gap: 12px;
   justify-items: center;
-  position: relative;
-  padding-top: 34px;
 }
 
 .back {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 16px;
+  left: 16px;
   width: 32px;
   height: 32px;
   border-radius: 50%;

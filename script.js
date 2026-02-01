@@ -10,7 +10,8 @@ let locked = false;
 let noHomeRect = null;
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const MIN_DISTANCE_FROM_POINTER = 90;
+const MIN_DISTANCE_FROM_POINTER = 120;
+const MIN_MOVE_DISTANCE = 60;
 
 function rectsOverlap(a, b, padding = 12) {
   return !(
@@ -77,8 +78,12 @@ function moveNoButton(event) {
   let x = 0;
   let y = 0;
   let tries = 0;
+  let bestCandidate = null;
+  let bestPointerDistance = -1;
+  let fallbackCandidate = null;
+  let fallbackPointerDistance = -1;
 
-  while (tries < 50) {
+  while (tries < 70) {
     x = minX + (rangeX === 0 ? 0 : Math.random() * rangeX);
     y = minY + (rangeY === 0 ? 0 : Math.random() * rangeY);
 
@@ -88,23 +93,53 @@ function moveNoButton(event) {
       w: noHomeRect.width,
       h: noHomeRect.height,
     };
-    const tooClose =
-      lastOffset.x !== null &&
-      Math.hypot(lastOffset.x - x, lastOffset.y - y) < 18;
+    if (rectsOverlap(noBox, yesBox)) {
+      tries += 1;
+      continue;
+    }
 
-    const pointerDistanceOk = pointer
+    const pointerDistance = pointer
       ? Math.hypot(
           noBox.x + noBox.w / 2 - pointer.x,
           noBox.y + noBox.h / 2 - pointer.y
-        ) >= MIN_DISTANCE_FROM_POINTER
-      : true;
+        )
+      : Infinity;
 
-    if (!rectsOverlap(noBox, yesBox) && !tooClose && pointerDistanceOk) break;
+    if (pointerDistance > fallbackPointerDistance) {
+      fallbackPointerDistance = pointerDistance;
+      fallbackCandidate = { x, y };
+    }
+
+    const moveDistance =
+      lastOffset.x !== null
+        ? Math.hypot(lastOffset.x - x, lastOffset.y - y)
+        : MIN_MOVE_DISTANCE;
+
+    if (moveDistance < MIN_MOVE_DISTANCE) {
+      tries += 1;
+      continue;
+    }
+
+    if (pointerDistance > bestPointerDistance) {
+      bestPointerDistance = pointerDistance;
+      bestCandidate = { x, y };
+    }
+
+    if (!pointer || pointerDistance >= MIN_DISTANCE_FROM_POINTER) {
+      bestCandidate = { x, y };
+      break;
+    }
 
     tries += 1;
   }
 
-  setNoOffset(x, y);
+  if (bestCandidate) {
+    setNoOffset(bestCandidate.x, bestCandidate.y);
+  } else if (fallbackCandidate) {
+    setNoOffset(fallbackCandidate.x, fallbackCandidate.y);
+  } else {
+    setNoOffset(0, 0);
+  }
 }
 
 function launchConfetti() {
@@ -133,6 +168,8 @@ function handleYesClick() {
   buttonArea.classList.add("hidden");
   success.classList.remove("hidden");
   success.hidden = false;
+  backBtn.classList.remove("hidden");
+  backBtn.hidden = false;
   launchConfetti();
 }
 
@@ -141,6 +178,8 @@ function handleBackClick() {
   buttonArea.classList.remove("hidden");
   success.classList.add("hidden");
   success.hidden = true;
+  backBtn.classList.add("hidden");
+  backBtn.hidden = true;
   confetti.innerHTML = "";
   refreshHomeRect();
 }
