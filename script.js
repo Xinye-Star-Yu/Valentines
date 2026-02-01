@@ -3,12 +3,14 @@ const noBtn = document.getElementById("noBtn");
 const buttonArea = document.getElementById("buttonArea");
 const success = document.getElementById("success");
 const confetti = document.getElementById("confetti");
+const backBtn = document.getElementById("backBtn");
 
 let lastOffset = { x: null, y: null };
 let locked = false;
 let noHomeRect = null;
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const MIN_DISTANCE_FROM_POINTER = 90;
 
 function rectsOverlap(a, b, padding = 12) {
   return !(
@@ -41,7 +43,7 @@ function refreshHomeRect() {
   noHomeRect = noBtn.getBoundingClientRect();
 }
 
-function moveNoButton() {
+function moveNoButton(event) {
   if (locked) return;
   if (!noHomeRect) refreshHomeRect();
 
@@ -68,11 +70,15 @@ function moveNoButton() {
   const rangeX = Math.max(0, maxX - minX);
   const rangeY = Math.max(0, maxY - minY);
 
+  const pointer = event
+    ? { x: event.clientX, y: event.clientY }
+    : null;
+
   let x = 0;
   let y = 0;
   let tries = 0;
 
-  while (tries < 40) {
+  while (tries < 50) {
     x = minX + (rangeX === 0 ? 0 : Math.random() * rangeX);
     y = minY + (rangeY === 0 ? 0 : Math.random() * rangeY);
 
@@ -86,7 +92,14 @@ function moveNoButton() {
       lastOffset.x !== null &&
       Math.hypot(lastOffset.x - x, lastOffset.y - y) < 18;
 
-    if (!rectsOverlap(noBox, yesBox) && !tooClose) break;
+    const pointerDistanceOk = pointer
+      ? Math.hypot(
+          noBox.x + noBox.w / 2 - pointer.x,
+          noBox.y + noBox.h / 2 - pointer.y
+        ) >= MIN_DISTANCE_FROM_POINTER
+      : true;
+
+    if (!rectsOverlap(noBox, yesBox) && !tooClose && pointerDistanceOk) break;
 
     tries += 1;
   }
@@ -123,6 +136,15 @@ function handleYesClick() {
   launchConfetti();
 }
 
+function handleBackClick() {
+  locked = false;
+  buttonArea.classList.remove("hidden");
+  success.classList.add("hidden");
+  success.hidden = true;
+  confetti.innerHTML = "";
+  refreshHomeRect();
+}
+
 function handleNearTap(event) {
   if (locked) return;
   if (event.target === yesBtn || event.target === noBtn) return;
@@ -133,16 +155,17 @@ function handleNearTap(event) {
   const distance = Math.hypot(noCenterX - event.clientX, noCenterY - event.clientY);
 
   if (distance < 80) {
-    moveNoButton();
+    moveNoButton(event);
   }
 }
 
 function init() {
   yesBtn.addEventListener("click", handleYesClick);
+  backBtn.addEventListener("click", handleBackClick);
   noBtn.addEventListener("mouseenter", moveNoButton);
   noBtn.addEventListener("pointerdown", (event) => {
     event.preventDefault();
-    moveNoButton();
+    moveNoButton(event);
   });
 
   buttonArea.addEventListener("pointerdown", handleNearTap);
