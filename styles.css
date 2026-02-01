@@ -64,6 +64,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 16px;
 }
 
 .btn {
@@ -103,7 +104,7 @@ body {
 }
 
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 .success {

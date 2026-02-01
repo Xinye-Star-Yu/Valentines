@@ -139,22 +139,28 @@ function init() {
   window.addEventListener("resize", ensureNoWithinBounds);
 
   requestAnimationFrame(() => {
-    const areaWidth = buttonArea.clientWidth;
-    const areaHeight = buttonArea.clientHeight;
-    const x = Math.max(0, areaWidth - noBtn.offsetWidth);
-    const y = Math.max(0, Math.floor(areaHeight * 0.15));
-    setNoPosition(x, y);
-
     const areaRect = buttonArea.getBoundingClientRect();
     const yesRect = yesBtn.getBoundingClientRect();
     const noRect = noBtn.getBoundingClientRect();
     const yesBox = getRelativeRect(yesRect, areaRect);
-    const noBox = getRelativeRect(noRect, areaRect);
+    const maxX = Math.max(0, areaRect.width - noRect.width);
+    const maxY = Math.max(0, areaRect.height - noRect.height);
+    const gap = 16;
 
+    let x = yesBox.x + yesBox.w + gap;
+    if (x + noRect.width > areaRect.width) {
+      x = yesBox.x - gap - noRect.width;
+    }
+    let y = yesBox.y + (yesBox.h - noRect.height) / 2;
+
+    x = clamp(x, 0, maxX);
+    y = clamp(y, 0, maxY);
+
+    setNoPosition(x, y);
+
+    const noBox = { x, y, w: noRect.width, h: noRect.height };
     if (rectsOverlap(noBox, yesBox)) {
       moveNoButton();
-    } else {
-      ensureNoWithinBounds();
     }
   });
 }
