@@ -181,7 +181,17 @@ function handleBackClick() {
   backBtn.classList.add("hidden");
   backBtn.hidden = true;
   confetti.innerHTML = "";
-  refreshHomeRect();
+
+  // Reset button position immediately
+  noBtn.style.transform = "translate(0px, 0px)";
+  lastOffset = { x: 0, y: 0 };
+
+  // Wait for layout to complete before recalculating home rect
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      refreshHomeRect();
+    });
+  });
 }
 
 function handleNearTap(event) {
