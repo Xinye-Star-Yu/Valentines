@@ -34,6 +34,8 @@ function setNoOffset(x, y) {
 }
 
 function refreshHomeRect() {
+  noBtn.style.left = "0px";
+  noBtn.style.top = "0px";
   noBtn.style.transform = "translate(0px, 0px)";
   lastOffset = { x: 0, y: 0 };
   noHomeRect = noBtn.getBoundingClientRect();
