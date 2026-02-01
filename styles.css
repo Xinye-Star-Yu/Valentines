@@ -107,6 +107,10 @@ body {
   display: none !important;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 .success {
   margin-top: 12px;
   display: grid;

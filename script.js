@@ -110,6 +110,7 @@ function handleYesClick() {
   locked = true;
   buttonArea.classList.add("hidden");
   success.classList.remove("hidden");
+  success.hidden = false;
   launchConfetti();
 }
 
