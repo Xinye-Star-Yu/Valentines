@@ -10,8 +10,8 @@ let locked = false;
 let noHomeRect = null;
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-const MIN_DISTANCE_FROM_POINTER = 120;
-const MIN_MOVE_DISTANCE = 60;
+const MIN_DISTANCE_FROM_POINTER = 200;
+const MIN_MOVE_DISTANCE = 120;
 
 function rectsOverlap(a, b, padding = 12) {
   return !(
