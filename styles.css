@@ -93,7 +93,7 @@ body {
 }
 
 .no {
-  position: absolute;
+  position: relative;
   background: #ffe6f0;
   color: var(--accent-deep);
   border: 2px solid rgba(230, 59, 134, 0.2);

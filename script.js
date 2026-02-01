@@ -4,14 +4,11 @@ const buttonArea = document.getElementById("buttonArea");
 const success = document.getElementById("success");
 const confetti = document.getElementById("confetti");
 
-let lastPos = { x: null, y: null };
+let lastOffset = { x: null, y: null };
 let locked = false;
+let noHomeRect = null;
 
 const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-function clamp(value, min, max) {
-  return Math.min(Math.max(value, min), max);
-}
 
 function rectsOverlap(a, b, padding = 12) {
   return !(
@@ -22,67 +19,77 @@ function rectsOverlap(a, b, padding = 12) {
   );
 }
 
-function getRelativeRect(childRect, parentRect) {
+function rectFromDomRect(rect) {
   return {
-    x: childRect.left - parentRect.left,
-    y: childRect.top - parentRect.top,
-    w: childRect.width,
-    h: childRect.height,
+    x: rect.left,
+    y: rect.top,
+    w: rect.width,
+    h: rect.height,
   };
 }
 
-function setNoPosition(x, y) {
-  noBtn.style.left = `${x}px`;
-  noBtn.style.top = `${y}px`;
-  lastPos = { x, y };
+function setNoOffset(x, y) {
+  noBtn.style.transform = `translate(${x}px, ${y}px)`;
+  lastOffset = { x, y };
+}
+
+function refreshHomeRect() {
+  noBtn.style.transform = "translate(0px, 0px)";
+  lastOffset = { x: 0, y: 0 };
+  noHomeRect = noBtn.getBoundingClientRect();
 }
 
 function moveNoButton() {
   if (locked) return;
+  if (!noHomeRect) refreshHomeRect();
 
   const areaRect = buttonArea.getBoundingClientRect();
-  const noRect = noBtn.getBoundingClientRect();
   const yesRect = yesBtn.getBoundingClientRect();
+  const yesBox = rectFromDomRect(yesRect);
 
-  const maxX = Math.max(0, areaRect.width - noRect.width);
-  const maxY = Math.max(0, areaRect.height - noRect.height);
-
-  const yesBox = getRelativeRect(yesRect, areaRect);
+  const minX = Math.min(
+    areaRect.left - noHomeRect.left,
+    areaRect.right - noHomeRect.right
+  );
+  const maxX = Math.max(
+    areaRect.left - noHomeRect.left,
+    areaRect.right - noHomeRect.right
+  );
+  const minY = Math.min(
+    areaRect.top - noHomeRect.top,
+    areaRect.bottom - noHomeRect.bottom
+  );
+  const maxY = Math.max(
+    areaRect.top - noHomeRect.top,
+    areaRect.bottom - noHomeRect.bottom
+  );
+  const rangeX = Math.max(0, maxX - minX);
+  const rangeY = Math.max(0, maxY - minY);
 
   let x = 0;
   let y = 0;
   let tries = 0;
 
   while (tries < 40) {
-    x = Math.random() * maxX;
-    y = Math.random() * maxY;
+    x = minX + (rangeX === 0 ? 0 : Math.random() * rangeX);
+    y = minY + (rangeY === 0 ? 0 : Math.random() * rangeY);
 
-    const noBox = { x, y, w: noRect.width, h: noRect.height };
+    const noBox = {
+      x: noHomeRect.left + x,
+      y: noHomeRect.top + y,
+      w: noHomeRect.width,
+      h: noHomeRect.height,
+    };
     const tooClose =
-      lastPos.x !== null &&
-      Math.hypot(lastPos.x - x, lastPos.y - y) < 18;
+      lastOffset.x !== null &&
+      Math.hypot(lastOffset.x - x, lastOffset.y - y) < 18;
 
     if (!rectsOverlap(noBox, yesBox) && !tooClose) break;
 
     tries += 1;
   }
 
-  setNoPosition(x, y);
-}
-
-function ensureNoWithinBounds() {
-  const areaRect = buttonArea.getBoundingClientRect();
-  const noRect = noBtn.getBoundingClientRect();
-  const maxX = Math.max(0, areaRect.width - noRect.width);
-  const maxY = Math.max(0, areaRect.height - noRect.height);
-
-  const currentX = parseFloat(noBtn.style.left || "0");
-  const currentY = parseFloat(noBtn.style.top || "0");
-
-  const clampedX = clamp(currentX, 0, maxX);
-  const clampedY = clamp(currentY, 0, maxY);
-
-  setNoPosition(clampedX, clampedY);
+  setNoOffset(x, y);
 }
 
 function launchConfetti() {
@@ -137,32 +144,10 @@ function init() {
   });
 
   buttonArea.addEventListener("pointerdown", handleNearTap);
-  window.addEventListener("resize", ensureNoWithinBounds);
+  window.addEventListener("resize", refreshHomeRect);
 
   requestAnimationFrame(() => {
-    const areaRect = buttonArea.getBoundingClientRect();
-    const yesRect = yesBtn.getBoundingClientRect();
-    const noRect = noBtn.getBoundingClientRect();
-    const yesBox = getRelativeRect(yesRect, areaRect);
-    const maxX = Math.max(0, areaRect.width - noRect.width);
-    const maxY = Math.max(0, areaRect.height - noRect.height);
-    const gap = 16;
-
-    let x = yesBox.x + yesBox.w + gap;
-    if (x + noRect.width > areaRect.width) {
-      x = yesBox.x - gap - noRect.width;
-    }
-    let y = yesBox.y + (yesBox.h - noRect.height) / 2;
-
-    x = clamp(x, 0, maxX);
-    y = clamp(y, 0, maxY);
-
-    setNoPosition(x, y);
-
-    const noBox = { x, y, w: noRect.width, h: noRect.height };
-    if (rectsOverlap(noBox, yesBox)) {
-      moveNoButton();
-    }
+    refreshHomeRect();
   });
 }
 
